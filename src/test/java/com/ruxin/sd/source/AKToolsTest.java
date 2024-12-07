@@ -21,7 +21,7 @@ public class AKToolsTest {
   @Test
   public void testGetAStockPrice() {
     List<StockPriceDTO> aStockPrice =
-        akToolsSource.getAStockPrice("600153", "20241201", "20241203", "qfq");
-    assertEquals(3, aStockPrice.size());
+        akToolsSource.getAStockPrice("600153", "20241202", "20241203", "qfq");
+    assertEquals(2, aStockPrice.size());
   }
 }
