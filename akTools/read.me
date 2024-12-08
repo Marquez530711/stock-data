@@ -1,2 +1,8 @@
+
+https://aktools.akfamily.xyz/aktools/
+
+# docker pull registry.cn-shanghai.aliyuncs.com/akfamily/aktools:[AKShare 的版本号]
+docker pull registry.cn-shanghai.aliyuncs.com/akfamily/aktools:1.8.95
+
 # start the container
-docker run -p 8080:8080 -d --rm --name aktools-container aktools-image
+docker run -d -p 8080:8080 registry.cn-shanghai.aliyuncs.com/akfamily/aktools:1.8.95
