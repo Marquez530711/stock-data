@@ -1,11 +1,12 @@
 package com.ruxin.sd.repository.entity;
 
+import com.ruxin.sd.source.entity.StockDetailDTO;
 import jakarta.persistence.Entity;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.util.Objects;
 
 /**
  * CREATE TABLE stock_info (
@@ -39,4 +40,34 @@ public class StockInfoEntity {
     private String industry;
 
     private String listingDate;
+
+    public void update(StockDetailDTO stockDetailDTO) {
+        this.stockName = stockDetailDTO.getName();
+        this.totalShares = stockDetailDTO.getTotalShares();
+        this.outstandingShares = stockDetailDTO.getOutstandingShares();
+        this.totalMarketValue = stockDetailDTO.getTotalMarketValue();
+        this.outstandingMarketValue = stockDetailDTO.getOutstandingMarketValue();
+        this.industry = stockDetailDTO.getIndustry();
+        this.listingDate = stockDetailDTO.getListingDate();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        StockInfoEntity that = (StockInfoEntity) o;
+        return stockCode.equals(that.stockCode)
+                && stockName.equals(that.stockName)
+                && totalShares.compareTo(that.totalShares) == 0
+                && outstandingShares.compareTo(that.outstandingShares) == 0
+                && totalMarketValue.compareTo(that.totalMarketValue) == 0
+                && outstandingMarketValue.compareTo(that.outstandingMarketValue) == 0
+                && industry.equals(that.industry)
+                && listingDate.equals(that.listingDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(stockCode, stockName, totalShares, outstandingShares, totalMarketValue,
+                outstandingMarketValue, industry, listingDate);
+    }
 }

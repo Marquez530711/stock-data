@@ -1,5 +1,6 @@
 package com.ruxin.sd.repository.entity;
 
+import com.ruxin.sd.source.entity.StockPriceDTO;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
@@ -54,4 +55,21 @@ public class StockDailyPriceQfqEntity {
     private BigDecimal changeAmount;
 
     private BigDecimal turnoverRate;
+
+    public static StockDailyPriceQfqEntity from(StockPriceDTO stockPriceDTO) {
+        StockDailyPriceQfqEntity stockDailyPriceQfqEntity = new StockDailyPriceQfqEntity();
+        stockDailyPriceQfqEntity.setTradeDate(stockPriceDTO.getTradeDate());
+        stockDailyPriceQfqEntity.setStockCode(stockPriceDTO.getStockCode());
+        stockDailyPriceQfqEntity.setOpenPrice(BigDecimal.valueOf(stockPriceDTO.getOpenPrice()));
+        stockDailyPriceQfqEntity.setClosePrice(BigDecimal.valueOf(stockPriceDTO.getClosePrice()));
+        stockDailyPriceQfqEntity.setHighPrice(BigDecimal.valueOf(stockPriceDTO.getHighPrice()));
+        stockDailyPriceQfqEntity.setLowPrice(BigDecimal.valueOf(stockPriceDTO.getLowPrice()));
+        stockDailyPriceQfqEntity.setVolume(BigDecimal.valueOf(stockPriceDTO.getVolume()));
+        stockDailyPriceQfqEntity.setTurnover(BigDecimal.valueOf(stockPriceDTO.getTurnover()));
+        stockDailyPriceQfqEntity.setAmplitude(BigDecimal.valueOf(stockPriceDTO.getAmplitude()));
+        stockDailyPriceQfqEntity.setChangePercentage(BigDecimal.valueOf(stockPriceDTO.getChangePercentage()));
+        stockDailyPriceQfqEntity.setChangeAmount(BigDecimal.valueOf(stockPriceDTO.getChangeAmount()));
+        stockDailyPriceQfqEntity.setTurnoverRate(BigDecimal.valueOf(stockPriceDTO.getTurnoverRate()));
+        return stockDailyPriceQfqEntity;
+    }
 }
