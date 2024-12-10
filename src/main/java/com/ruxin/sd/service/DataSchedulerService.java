@@ -32,23 +32,40 @@ public class DataSchedulerService {
         this.stockDailyPriceQfqRepository = stockDailyPriceQfqRepository;
     }
 
-    public void refreshStockInfo(LocalDate startDate, LocalDate endDate, String adjustType) {
+    public void refreshStockInfo() {
         log.info("refresh stock info");
         List<StockInfoDTO> allAStockInfo = baseSource.getAllAStockInfo();
         if (allAStockInfo.isEmpty()) {
-            log.error("Failed to get all A stock info");
+            log.error("Refresh stock info, Failed to get all A stock info");
             return;
         }
-        //序列化时间 20210301
-        String start = startDate.format(DateTimeFormatter.BASIC_ISO_DATE);
-        String end = endDate.format(DateTimeFormatter.BASIC_ISO_DATE);
         for (StockInfoDTO stockInfoDTO : allAStockInfo) {
             //1.query and update stock info
             queryAndUpdateStockInfo(stockInfoDTO);
+        }
+        log.info("refresh stock info done");
+    }
+
+    public void refreshStockPrice(LocalDate startDate, LocalDate endDate, String adjustType) {
+        log.info("refresh stock price");
+        List<StockInfoDTO> allAStockInfo = baseSource.getAllAStockInfo();
+        if (allAStockInfo.isEmpty()) {
+            log.error("Refresh stock price, Failed to get all A stock info");
+            return;
+        }
+
+        //序列化时间格式, e.g. 20210301
+        String start = startDate.format(DateTimeFormatter.BASIC_ISO_DATE);
+        String end = endDate.format(DateTimeFormatter.BASIC_ISO_DATE);
+        for (StockInfoDTO stockInfoDTO : allAStockInfo) {
             //query today price
             List<StockPriceDTO> stockPrice = baseSource.getAStockPrice(stockInfoDTO.getCode(), start, end, adjustType);
             if (stockPrice.isEmpty()) {
-                log.error("Failed to get stock price for code: {}", stockInfoDTO.getCode());
+                log.error("Failed to get stock price for code: {},start: {},end: {}, adjustType: {}",
+                        stockInfoDTO.getCode(),
+                        start,
+                        end,
+                        adjustType);
                 continue;
             }
             //todo save stock price
@@ -67,9 +84,7 @@ public class DataSchedulerService {
                             stockDailyPriceQfqRepository.save(stockDailyPriceQfqEntity);
                         });
             }
-
         }
-        log.info("refresh stock info done");
     }
 
     private void queryAndUpdateStockInfo(StockInfoDTO stockInfoDTO) {
