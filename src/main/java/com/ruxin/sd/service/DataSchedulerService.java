@@ -39,6 +39,7 @@ public class DataSchedulerService {
             log.error("Refresh stock info, Failed to get all A stock info");
             return;
         }
+        log.info("All A stock info size:{}", allAStockInfo.size());
         for (StockInfoDTO stockInfoDTO : allAStockInfo) {
             //1.query and update stock info
             queryAndUpdateStockInfo(stockInfoDTO);

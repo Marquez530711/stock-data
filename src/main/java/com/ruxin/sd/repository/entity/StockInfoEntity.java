@@ -2,8 +2,9 @@ package com.ruxin.sd.repository.entity;
 
 import com.ruxin.sd.source.entity.StockDetailDTO;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+
 
 import java.math.BigDecimal;
 import java.util.Objects;
