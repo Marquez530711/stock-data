@@ -6,3 +6,5 @@ docker pull registry.cn-shanghai.aliyuncs.com/akfamily/aktools:1.8.95
 
 # start the container
 docker run -d -p 8080:8080 registry.cn-shanghai.aliyuncs.com/akfamily/aktools:1.8.95
+
+docker run -p 8080:8080 -d --rm --name aktools-container aktools-image

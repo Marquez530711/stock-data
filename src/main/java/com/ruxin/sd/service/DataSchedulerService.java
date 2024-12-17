@@ -49,7 +49,7 @@ public class DataSchedulerService {
 
     public void refreshStockPrice(LocalDate startDate, LocalDate endDate, String adjustType) {
         log.info("refresh stock price");
-        List<StockInfoDTO> allAStockInfo = baseSource.getAllAStockInfo();
+        List<StockInfoEntity> allAStockInfo = stockInfoRepository.findAll();
         if (allAStockInfo.isEmpty()) {
             log.error("Refresh stock price, Failed to get all A stock info");
             return;
@@ -58,12 +58,12 @@ public class DataSchedulerService {
         //序列化时间格式, e.g. 20210301
         String start = startDate.format(DateTimeFormatter.BASIC_ISO_DATE);
         String end = endDate.format(DateTimeFormatter.BASIC_ISO_DATE);
-        for (StockInfoDTO stockInfoDTO : allAStockInfo) {
+        for (StockInfoEntity stockInfoDTO : allAStockInfo) {
             //query today price
-            List<StockPriceDTO> stockPrice = baseSource.getAStockPrice(stockInfoDTO.getCode(), start, end, adjustType);
+            List<StockPriceDTO> stockPrice = baseSource.getAStockPrice(stockInfoDTO.getStockCode(), start, end, adjustType);
             if (stockPrice.isEmpty()) {
                 log.error("Failed to get stock price for code: {},start: {},end: {}, adjustType: {}",
-                        stockInfoDTO.getCode(),
+                        stockInfoDTO.getStockCode(),
                         start,
                         end,
                         adjustType);
@@ -73,13 +73,13 @@ public class DataSchedulerService {
             for (StockPriceDTO price : stockPrice) {
                 log.info("Stock price: {}", price);
                 //if exist then return(don't need update), else save
-                stockDailyPriceQfqRepository.findByStockCodeAndTradeDate(stockInfoDTO.getCode(), price.getTradeDate())
+                stockDailyPriceQfqRepository.findByStockCodeAndTradeDate(stockInfoDTO.getStockCode(), price.getTradeDate())
                         .ifPresentOrElse(stockDailyPriceQfqEntity -> {
-                            log.warn("Stock price already exist for code: {}, date: {}", stockInfoDTO.getCode(),
+                            log.warn("Stock price already exist for code: {}, date: {}", stockInfoDTO.getStockCode(),
                                     price.getTradeDate());
                         }, () -> {
                             //save new stock price
-                            log.info("Save stock price for code: {}, date: {}", stockInfoDTO.getCode(),
+                            log.info("Save stock price for code: {}, date: {}", stockInfoDTO.getStockCode(),
                                     price.getTradeDate());
                             StockDailyPriceQfqEntity stockDailyPriceQfqEntity = StockDailyPriceQfqEntity.from(price);
                             stockDailyPriceQfqRepository.save(stockDailyPriceQfqEntity);
