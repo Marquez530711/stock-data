@@ -2,6 +2,8 @@ package com.ruxin.sd.repository.entity;
 
 import com.ruxin.sd.source.entity.StockPriceDTO;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Data;
 
@@ -30,6 +32,7 @@ import java.math.BigDecimal;
 public class StockDailyPriceQfqEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String tradeDate;
