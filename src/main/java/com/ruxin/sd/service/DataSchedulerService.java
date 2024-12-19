@@ -1,8 +1,6 @@
 package com.ruxin.sd.service;
 
-import com.ruxin.sd.repository.StockDailyPriceQfqRepository;
-import com.ruxin.sd.repository.StockInfoRepository;
-import com.ruxin.sd.repository.entity.StockDailyPriceQfqEntity;
+import com.ruxin.sd.manager.StockRepositoryManager;
 import com.ruxin.sd.repository.entity.StockInfoEntity;
 import com.ruxin.sd.source.BaseSource;
 import com.ruxin.sd.source.entity.StockDetailDTO;
@@ -15,21 +13,24 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 public class DataSchedulerService {
 
     private final BaseSource baseSource;
-    private final StockInfoRepository stockInfoRepository;
-    private final StockDailyPriceQfqRepository stockDailyPriceQfqRepository;
+    private final StockRepositoryManager stockRepositoryManager;
+    private final ThreadPoolExecutor threadPoolExecutor;
 
     public DataSchedulerService(@Qualifier("AKToolsSource") BaseSource baseSource,
-                                StockInfoRepository stockInfoRepository,
-                                StockDailyPriceQfqRepository stockDailyPriceQfqRepository) {
+                                StockRepositoryManager stockRepositoryManager) {
         this.baseSource = baseSource;
-        this.stockInfoRepository = stockInfoRepository;
-        this.stockDailyPriceQfqRepository = stockDailyPriceQfqRepository;
+        this.stockRepositoryManager = stockRepositoryManager;
+        this.threadPoolExecutor = new ThreadPoolExecutor(5, 10, 60, TimeUnit.SECONDS,
+                new java.util.concurrent.LinkedBlockingQueue<>());
+
     }
 
     public void refreshStockInfo() {
@@ -49,7 +50,7 @@ public class DataSchedulerService {
 
     public void refreshStockPrice(LocalDate startDate, LocalDate endDate, String adjustType) {
         log.info("refresh stock price");
-        List<StockInfoEntity> allAStockInfo = stockInfoRepository.findAll();
+        List<StockInfoEntity> allAStockInfo = stockRepositoryManager.getAllAStockInfo();
         if (allAStockInfo.isEmpty()) {
             log.error("Refresh stock price, Failed to get all A stock info");
             return;
@@ -60,7 +61,8 @@ public class DataSchedulerService {
         String end = endDate.format(DateTimeFormatter.BASIC_ISO_DATE);
         for (StockInfoEntity stockInfoDTO : allAStockInfo) {
             //query today price
-            List<StockPriceDTO> stockPrice = baseSource.getAStockPrice(stockInfoDTO.getStockCode(), start, end, adjustType);
+            List<StockPriceDTO> stockPrice = baseSource.getAStockPrice(stockInfoDTO.getStockCode(), start, end,
+                    adjustType);
             if (stockPrice.isEmpty()) {
                 log.error("Failed to get stock price for code: {},start: {},end: {}, adjustType: {}",
                         stockInfoDTO.getStockCode(),
@@ -72,20 +74,10 @@ public class DataSchedulerService {
             //todo save stock price
             for (StockPriceDTO price : stockPrice) {
                 log.info("Stock price: {}", price);
-                //if exist then return(don't need update), else save
-                stockDailyPriceQfqRepository.findByStockCodeAndTradeDate(stockInfoDTO.getStockCode(), price.getTradeDate())
-                        .ifPresentOrElse(stockDailyPriceQfqEntity -> {
-                            log.warn("Stock price already exist for code: {}, date: {}", stockInfoDTO.getStockCode(),
-                                    price.getTradeDate());
-                        }, () -> {
-                            //save new stock price
-                            log.info("Save stock price for code: {}, date: {}", stockInfoDTO.getStockCode(),
-                                    price.getTradeDate());
-                            StockDailyPriceQfqEntity stockDailyPriceQfqEntity = StockDailyPriceQfqEntity.from(price);
-                            stockDailyPriceQfqRepository.save(stockDailyPriceQfqEntity);
-                        });
+                threadPoolExecutor.execute(() -> stockRepositoryManager.createOrUpdateStockPrice(stockInfoDTO, price));
             }
         }
+        log.info("refresh stock price done");
     }
 
     private void queryAndUpdateStockInfo(StockInfoDTO stockInfoDTO) {
@@ -95,32 +87,6 @@ public class DataSchedulerService {
             return;
         }
         log.info("Stock detail: {}", stockDetail);
-        //todo async save stock info
-        stockInfoRepository.findByStockCode(stockInfoDTO.getCode())
-                .ifPresentOrElse(stockInfoEntity -> {
-                    //compare if not equal then update
-                    if (!stockInfoEntity.getStockName().equals(stockDetail.getName())
-                            || stockInfoEntity.getTotalShares().compareTo(stockDetail.getTotalShares()) != 0
-                            || stockInfoEntity.getOutstandingShares().compareTo(stockDetail.getOutstandingShares()) != 0
-                            || stockInfoEntity.getTotalMarketValue().compareTo(stockDetail.getTotalMarketValue()) != 0
-                            || stockInfoEntity.getOutstandingMarketValue().compareTo(stockDetail.getOutstandingMarketValue()) != 0
-                            || !stockInfoEntity.getIndustry().equals(stockDetail.getIndustry())
-                            || !stockInfoEntity.getListingDate().equals(stockDetail.getListingDate())) {
-                        stockInfoEntity.update(stockDetail);
-                        stockInfoRepository.save(stockInfoEntity);
-                    }
-                }, () -> {
-                    //save new stock detail
-                    StockInfoEntity stockInfoEntity = new StockInfoEntity();
-                    stockInfoEntity.setStockCode(stockInfoDTO.getCode());
-                    stockInfoEntity.setStockName(stockDetail.getName());
-                    stockInfoEntity.setTotalShares(stockDetail.getTotalShares());
-                    stockInfoEntity.setOutstandingShares(stockDetail.getOutstandingShares());
-                    stockInfoEntity.setTotalMarketValue(stockDetail.getTotalMarketValue());
-                    stockInfoEntity.setOutstandingMarketValue(stockDetail.getOutstandingMarketValue());
-                    stockInfoEntity.setIndustry(stockDetail.getIndustry());
-                    stockInfoEntity.setListingDate(stockDetail.getListingDate());
-                    stockInfoRepository.save(stockInfoEntity);
-                });
+        threadPoolExecutor.execute(() -> stockRepositoryManager.createOrUpdateStockInfo(stockInfoDTO, stockDetail));
     }
 }
